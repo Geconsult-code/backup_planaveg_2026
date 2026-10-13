@@ -18,6 +18,9 @@ Ações (só com --executar; sem ele, apenas simula e mostra o plano):
      entregue são os arquivos sem sufixo).
   4. Grava o _manifesto_backup.csv (lista também o que está só no Dropbox).
 
+A coluna destino_relativo diz onde cada item é restaurado (ver restaurar_backup.py, no
+repositório backup_planaveg_2026, onde este script é mantido).
+
 Uso (Python 3 comum, não precisa do env geo):
   python organizar_backup.py                 # simulação
   python organizar_backup.py --executar      # aplica as ações e grava o manifesto
@@ -32,9 +35,9 @@ import re
 import sys
 import time
 import zipfile
-from pathlib import Path, PurePosixPath
+from pathlib import Path, PurePosixPath, PureWindowsPath
 
-BACKUP = Path(r"F:\BKP_PLANAVEG")
+BACKUP = Path(os.environ.get("PLANAVEG_BACKUP", r"F:\BKP_PLANAVEG"))
 DROPBOX = Path(r"C:\Users\User\Dropbox\#CONSULTANCY\PLANAVEG\GEODATABASE\GEOPACKAGE")
 G = r"C:\Users\User\Dropbox\#CONSULTANCY\PLANAVEG\GEODATABASE\GEOPACKAGE"   # raiz usada no código hoje
 SICAR_BRUTO = r"C:\Users\User\Dropbox\Geoinformation\GEOINFO BRASIL\SICAR\BASE_CAR_ESTADOS_05_2026"
@@ -48,6 +51,15 @@ DESCARTAR = [
     "Computo_Planaveg_2025/Planaveg_2025_Projetos_Outros_com_area.zip",
     "Computo_Planaveg_2025/Planaveg_2025_Projetos_Recooperar_com_area.zip",
 ]
+# pasta do backup -> pasta de trabalho equivalente (para itens que o código não lê diretamente)
+PASTA_TRABALHO = {
+    "Dados_originais_Planaveg_2026": "",
+    "Vegetacao_Secundaria": "Vegetacao_Secundaria_INPE",
+    "Cruzamento_Espacial": "Cruzamento_Espacial_Vegetacao_Secundaria",
+    "Computo_Planaveg_2026/Hierarquia": "Computo_Planaveg_2026",
+    "Cadastro_Ambiental_Rural": "_SICAR_bruto",
+    "Cadastro_Ambiental_Rural_UF": "CAR_Maio2026_Imoveis_Selecionados",
+}
 IGNORAR = {"desktop.ini", "thumbs.db", MANIFESTO.lower(), "organizar_backup.py"}
 
 R_CONF = "analise_conformidade_sicar-incra"
@@ -218,7 +230,7 @@ def classificar(rel):
                         "não - pode ser refeito", "Evita recortar a VS de novo ao refazer o cruzamento")
         if stem == "VS-Cadastro_Ambiental_Rural_validacao":
             return info("Registro", "Validação em nuvem do cruzamento VS x CAR", R_VS, "", "", "", "não - registro",
-                        "Amostra usada para validar o cruzamento VS x APP/AUR/RL; não é lida pelos scripts")
+                        "Amostra usada para validar o cruzamento VS x APP/AUR/RL (não é lida pelos scripts)")
         if stem in ("VS-Pro_Manguezal", "VS-Terras_Indigenas", "VS-Unidades_Conservacao", "VS-Projetos_Restauracao"):
             cons = (f"{R_VS}: incorporar_vegsec_projetos.py; {R_COMP}: 1_preparar_insumos.py (Recooperar)"
                     if stem == "VS-Projetos_Restauracao" else f"{R_COMP}: 1_preparar_insumos.py (classes 6 a 8)")
@@ -253,6 +265,32 @@ def membro_codigo(base, membro):
     if not base or base.endswith(".gpkg"):
         return base
     return base.rstrip("\\ ") + "\\" + PurePosixPath(membro).name
+
+
+def destino_rel(rel, codigo, grupo, membro=None):
+    """Caminho relativo à raiz dos dados (pasta GEOPACKAGE) onde o item deve ser restaurado.
+    Vazio = não é restaurado (zip cujo conteúdo é restaurado item a item, cópia de script, pasta)."""
+    nome = PurePosixPath(membro).name if membro else PurePosixPath(rel).name
+    if grupo in ("Pasta", "Script (cópia)", "Não está no backup"):
+        return ""
+    if rel.lower() == REGISTROS.lower():
+        return "" if membro else REGISTROS            # o zip de registros é copiado inteiro, sem extrair
+    if not membro and rel.lower().endswith(".zip"):
+        return ""                                    # restaura-se o conteúdo do zip
+    codigo = codigo.strip()
+    if codigo.startswith(G):
+        r = codigo[len(G):].strip("\\ ")
+        if "<" in r or (membro and codigo.endswith("\\")):
+            r = str(PureWindowsPath(r) / nome) if not "<" in r else str(PureWindowsPath(r).parent / nome)
+        return r
+    if codigo.startswith(SICAR_BRUTO):
+        return "_SICAR_bruto\\" + nome                 # o código lê pastas por estado: conversão manual
+    # sem caminho no código: pasta do backup traduzida para a pasta de trabalho equivalente
+    partes = rel.split("/")[:-1]
+    chave = "/".join(partes[:2]) if partes[:2] == ["Computo_Planaveg_2026", "Hierarquia"] else (partes[0] if partes else "")
+    if chave in PASTA_TRABALHO:
+        partes = [x for x in PASTA_TRABALHO[chave].split("/") if x] + partes[len(chave.split("/")):]
+    return str(PureWindowsPath(*partes, nome)) if partes else nome
 
 
 def mtime(p):
@@ -326,13 +364,14 @@ def gerar_manifesto(backup, dropbox, verificar_crc):
         rel = p.relative_to(backup).as_posix()
         if p.is_dir():
             linhas.append(dict(caminho_backup=str(p), nivel="pasta", arquivo=p.name, tamanho_MB="",
-                               modificado="", **info("Pasta")))
+                               modificado="", **info("Pasta"), destino_relativo=""))
             continue
         a = classificar(rel)
         nomes_backup.add(p.name.lower())
         nomes_backup.add(p.stem.lower())
         linhas.append(dict(caminho_backup=str(p), nivel="arquivo", arquivo=p.name,
-                           tamanho_MB=round(p.stat().st_size / 1024**2, 2), modificado=mtime(p), **a))
+                           tamanho_MB=round(p.stat().st_size / 1024**2, 2), modificado=mtime(p), **a,
+                           destino_relativo=destino_rel(rel, a["caminho_no_codigo"], a["grupo"])))
         if p.suffix.lower() != ".zip":
             continue
         try:
@@ -359,7 +398,9 @@ def gerar_manifesto(backup, dropbox, verificar_crc):
                     linhas.append(dict(caminho_backup=f"{p}::{i.filename}", nivel="conteudo_zip",
                                        arquivo=PurePosixPath(i.filename).name,
                                        tamanho_MB=round(i.file_size / 1024**2, 2),
-                                       modificado="%04d-%02d-%02d %02d:%02d" % i.date_time[:5], **b))
+                                       modificado="%04d-%02d-%02d %02d:%02d" % i.date_time[:5], **b,
+                                       destino_relativo=destino_rel(rel, b["caminho_no_codigo"], b["grupo"],
+                                                                    i.filename)))
         except (zipfile.BadZipFile, OSError) as e:
             linhas[-1]["observacao"] += f" | NÃO FOI POSSÍVEL LISTAR O ZIP: {e}"
 
@@ -373,7 +414,7 @@ def gerar_manifesto(backup, dropbox, verificar_crc):
             so_dropbox.append(p)
             linhas.append(dict(caminho_backup="", nivel="somente_dropbox", arquivo=p.name,
                                tamanho_MB=round(p.stat().st_size / 1024**2, 2), modificado=mtime(p),
-                               **info("Não está no backup", obs=f"Só existe em {p}")))
+                               **info("Não está no backup", obs=f"Só existe em {p}"), destino_relativo=""))
 
     with open(backup / MANIFESTO, "w", newline="", encoding="utf-8-sig") as f:
         w = csv.DictWriter(f, fieldnames=list(linhas[0].keys()), delimiter=";")
