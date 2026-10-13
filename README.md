@@ -118,53 +118,24 @@ Não defina `PLANAVEG_SAIDA` de forma permanente: o `computo_hierarquia-planaveg
 para a pasta `Computo_Planaveg_2026`, e o `incorporar_vegsec_projetos.py` para
 `Projetos_com_VegSec`. Use-a só na sessão do terminal, se precisar.
 
+Com isso, nenhum script precisa ser editado: os quatro repositórios leem a mesma estrutura
+de pastas da restauração.
+
 | Repositório | Como lê a pasta de dados |
 |---|---|
-| `computo_hierarquia-planaveg` | `PLANAVEG_RAIZ` (`config_computo.py`); nada a editar |
-| `visualizacao_categoria-fundiaria` | `PLANAVEG_GEO` (`viz_comum.py`); nada a editar |
-| `cruzamento_vegetacao-secundaria` | `PLANAVEG_RAIZ` em `cruzar_embargos_vegsec.py` e `incorporar_vegsec_projetos.py`; caminhos fixos nos demais (tabela abaixo) |
-| `analise_conformidade_sicar-incra` | Caminhos fixos (tabela abaixo) |
+| `computo_hierarquia-planaveg` | `PLANAVEG_RAIZ` (`config_computo.py`) |
+| `visualizacao_categoria-fundiaria` | `PLANAVEG_GEO` (`viz_comum.py`) |
+| `cruzamento_vegetacao-secundaria` | `PLANAVEG_RAIZ` (constante `RAIZ` no topo de cada script) |
+| `analise_conformidade_sicar-incra` | `PLANAVEG_RAIZ`, via `conformidade/caminhos.py`: usa `<dados>\Analise_Conformidade_CAR-INCRA` se essa pasta existir; senão, as pastas originais no Dropbox |
 
-### Caminhos fixos a editar (estado em outubro/2026)
+Sem `PLANAVEG_RAIZ`, os scripts usam `GEODATABASE\GEOPACKAGE` no Dropbox, e a conformidade usa
+as pastas originais do SICAR, do INCRA e `GEODATABASE\Analise_Conformidade_CAR-INCRA`. A cópia reduzida do
+Dropbox não tem os intermediários (cruzamentos, imóveis selecionados por UF etc.); para
+reprocessar é preciso restaurar o backup.
 
-Esses scripts ainda trazem caminhos absolutos e, em parte, nomes de pasta anteriores à
-organização do backup. Antes de rodá-los, troque o valor pela pasta restaurada:
-
-**cruzamento_vegetacao-secundaria**
-
-| Script | Constante | Usar |
-|---|---|---|
-| `1_processar_dados_VS_qualificada.py`, `1_processar_dados_VS_2024_qualificada.py` | `VEG_GPKG` / `VS_DIR` | `<dados>\Vegetacao_Secundaria_INPE` |
-| idem | `CAR_DIR` | `<dados>\CAR_Maio2026_Imoveis_Selecionados` |
-| `2_cruzamento_espacial_VS_qualificado.py`, `2_cruzamento_espacial_VS_2024.py` | `CAR_DIR` | `<dados>\CAR_Maio2026_Imoveis_Selecionados` |
-| idem | `CRUZ_DIR` | `<dados>\Cruzamento_Espacial_Vegetacao_Secundaria\VS-Cadastro_Ambiental_Rural` |
-| `cruzar_projetos_vegsec_qualificado.py`, `cruzar_projetos_vegsec_qualificado_2022_2024.py` | `PASTA_PROJETOS` | `<dados>` |
-| idem | `PASTA_VEGSEC_INPE` | `<dados>\Vegetacao_Secundaria_INPE` |
-| idem | `PASTA_SAIDA` | `<dados>\Cruzamento_Espacial_Vegetacao_Secundaria` (os resultados ficam em `VS-<tema>`) |
-| `agregar_areas_uc*.py` | `PASTA` | `<dados>\Cruzamento_Espacial_Vegetacao_Secundaria\VS-Unidades_Conservacao` |
-| `analisar_vegsec_*.py` | `PASTA` | `<dados>\Vegetacao_Secundaria_INPE` |
-| `0_incorporar_app_rl_aur_analisados.py` | `NEW_DIR` | `<dados>\CAR_Maio2026_Imoveis_Selecionados` |
-
-`1_processar_dados_VS.py`, `2_cruzamento_espacial_VS.py`, `3_analise_consistencia_VS.py`,
-`4_validacao_resultados_VS.py` e `cruzar_projetos_vegsec.py` são do fluxo com VS sem
-qualificação, substituído pelas versões qualificadas; não precisam ser rodados.
-
-**analise_conformidade_sicar-incra**
-
-| Script | Constante | Usar |
-|---|---|---|
-| `1_processar_dados_incra.py` | `SIGEF_ARQ` | `<dados>\Analise_Conformidade_CAR-INCRA\INCRA\SIGEF\Sigef Privado.shp` |
-| idem | `SNCI_ARQ` | `<dados>\Analise_Conformidade_CAR-INCRA\INCRA\SNCI\Imóvel certificado SNCI Privado.shp` |
-| idem | `PASTA_SAIDA` | `<dados>\Analise_Conformidade_CAR-INCRA\INCRA` |
-| `4_analise_conformidade.py` | `PASTA_INCRA` | `<dados>\Analise_Conformidade_CAR-INCRA\INCRA` |
-| `2_processar_dados_sicar.py`, `5_extracao_APP_RL_AUR.py` | `PASTA_SICAR` | `<dados>\Analise_Conformidade_CAR-INCRA\SICAR_BASE_CAR_ESTADOS_05_2026` |
-| `2_` a `5_` | `PASTA_ANALISE` | `<dados>\Analise_Conformidade_CAR-INCRA\Resultados_Analise_Conformidade` |
-| `6_validacao_resultados.py` | `BASE_ROOT` | idem |
-| `dissolver_car_total.py` | `PASTA_BASE`, `PASTA_UF`, `ARQ_*` | ver o CONFIG do script (estrutura atual ainda não validada) |
-
-Na máquina original, `PASTA_ANALISE` / `BASE_ROOT` ainda apontam para
-`GEODATABASE\INCRA-CAR\Analise_Conformidade`, pasta que foi renomeada para
-`GEODATABASE\Analise_Conformidade_CAR-INCRA\Resultados_Analise_Conformidade`.
+Os scripts do `cruzamento_vegetacao-secundaria` sem qualificação (`1_processar_dados_VS.py`,
+`2_cruzamento_espacial_VS.py`, `3_*`, `4_*`, `cruzar_projetos_vegsec.py`, `agregar_areas_uc.py`)
+foram substituídos pelas versões qualificadas e não precisam ser rodados.
 
 Os scripts 4 a 6 retomam do ponto em que pararam usando os `_progresso_*.json`. Esses
 arquivos ficam em `Registros_Resultados_Conformidade.zip` e **não** são restaurados, para

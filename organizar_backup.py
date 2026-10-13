@@ -217,15 +217,14 @@ def classificar(rel):
                     f"{R_CONF}: 3 a 6 e dissolver_car_total.py; {R_VS}: 0_incorporar_app_rl_aur_analisados.py, "
                     "1_processar_dados_VS.py, 2_cruzamento_espacial_VS.py",
                     rf"{res}\ ", "sim",
-                    r"No código: PASTA_ANALISE / BASE_ROOT (ainda apontam para INCRA-CAR\Analise_Conformidade, "
-                    r"pasta renomeada). Sem a subpasta <UF>_shapefile (temporária, refeita pelo passo 2)")
+                    r"No código: conformidade/caminhos.py (PASTA_ANALISE). Sem a subpasta <UF>_shapefile "
+                    r"(temporária, refeita pelo passo 2)")
     if p.startswith("cadastro_ambiental_rural_uf/imoveis_selecionados"):
         return info("Produto intermediário", "Conformidade SICAR x INCRA (imóveis selecionados por UF)", R_CONF,
                     f"{R_CONF}: 3_categorizar_dados_sicar.py, 4_analise_conformidade.py, 5_extracao_APP_RL_AUR.py; "
                     f"{R_VS}: 0_incorporar_app_rl_aur_analisados.py",
                     f"{R_COMP}: 3b_camada1_car.py; {R_VS}: 1_processar_dados_VS_*.py, 2_cruzamento_espacial_VS_*.py",
-                    rf"{G}\CAR_Maio2026_Imoveis_Selecionados\<UF>_CAR_Imoveis_Selecionados_<categoria>.gpkg", "sim",
-                    r"Scripts do cruzamento VS ainda apontam para GEOPACKAGE\Cadastro Ambiental Rural_Maio2026")
+                    rf"{G}\CAR_Maio2026_Imoveis_Selecionados\<UF>_CAR_Imoveis_Selecionados_<categoria>.gpkg", "sim")
     if p.startswith("computo_planaveg_2025/"):
         return info("Produto final (referência)", "Cômputo Planaveg 2025", obs="Reporte 2025 entregue; não é lido pelos scripts")
     if p.startswith("computo_planaveg_2026/insumos/"):
@@ -275,8 +274,7 @@ def classificar(rel):
         if stem == "VS-Cadastro_Ambiental_Rural":
             return info("Produto intermediário", "Cruzamento VS x APP/AUR/RL dos imóveis selecionados", R_VS,
                         "2_cruzamento_espacial_VS_qualificado.py, 2_cruzamento_espacial_VS_2024.py (e 2_cruzamento_espacial_VS.py, não qualificado)",
-                        f"{R_COMP}: 3b_camada1_car.py", rf"{cz}\VS-Cadastro_Ambiental_Rural\ ", "sim",
-                        r"Os scripts 2_* gravam em GEOPACKAGE\Cruzamento CAR Vegetacao Secundaria")
+                        f"{R_COMP}: 3b_camada1_car.py", rf"{cz}\VS-Cadastro_Ambiental_Rural\ ", "sim")
         if stem == "VS-Cadastro_Ambiental_Rural_UF":
             return info("Produto intermediário", "VS qualificada recortada por UF", R_VS,
                         "1_processar_dados_VS_qualificada.py, 1_processar_dados_VS_2024_qualificada.py",
@@ -291,8 +289,7 @@ def classificar(rel):
                     if stem == "VS-Projetos_Restauracao" else f"{R_COMP}: 1_preparar_insumos.py (classes 6 a 8)")
             return info("Produto intermediário", f"Cruzamento VS x {stem[3:]}", R_VS,
                         "cruzar_projetos_vegsec_qualificado.py, cruzar_projetos_vegsec_qualificado_2022_2024.py",
-                        cons, rf"{cz}\{stem}\ ", "sim",
-                        r"Os scripts gravam em GEOPACKAGE\Cruzamento_Projetos_VegSec")
+                        cons, rf"{cz}\{stem}\ ", "sim")
         if stem == "Projetos_com_Vegetacao_Secundaria":
             return info("Produto intermediário", "Projetos com atributos de VS", R_VS, "incorporar_vegsec_projetos.py",
                         f"{R_COMP}: 1_preparar_insumos.py (Recooperar 2026)", rf"{G}\Projetos_com_VegSec\ ", "sim",
@@ -310,7 +307,7 @@ def classificar(rel):
                 if qualif else f"{R_VS}: analisar_vegsec_*.py (comparação bruto x qualificado)")
         return info("Dado original", "Vegetação secundária INPE", "", "INPE (TerraBrasilis / TerraClass)", cons,
                     rf"{G}\Vegetacao_Secundaria_INPE\{stem}.gpkg", "sim" if qualif else "não - referência",
-                    r"Scripts do cruzamento VS usam GEOPACKAGE\INPE_Vegetacao_Secundaria" if qualif else "VS sem qualificação")
+                    "" if qualif else "VS sem qualificação")
     return info("Não classificado", obs="Revisar")
 
 
