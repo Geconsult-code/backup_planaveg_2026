@@ -19,6 +19,7 @@ repositórios de processamento:
 |---|---|
 | `restaurar_backup.py` | Restaura o backup na estrutura de pastas que os scripts esperam, numa pasta à escolha |
 | `organizar_backup.py` | Mantém o backup: consolida registros e gera o `_manifesto_backup.csv` |
+| `complementar_backup.py` | Acrescenta ao backup os insumos e a pasta de trabalho da conformidade SICAR x INCRA |
 | `manifesto/_manifesto_backup.csv` | Cópia do manifesto (o original fica na raiz do backup) |
 
 Os scripts usam só a biblioteca padrão do Python (3.10 ou mais recente); não precisam do
@@ -33,7 +34,10 @@ Quase tudo está em `.zip`; cada zip guarda os arquivos de uma pasta de trabalho
 |---|---|---|
 | `Dados_originais_Planaveg_2026` | Insumos: IBGE, CNUC, FUNAI, INCRA, Recooperar, ICMBio, ORR, Pró-Manguezal, PANGIA, CAR regularização, SIGEF público em APA | raiz |
 | `Vegetacao_Secundaria` | VS 2022 (Brasil) e VS 2024 (Amazônia, Cerrado), bruta e qualificada | `Vegetacao_Secundaria_INPE` |
-| `Cadastro_Ambiental_Rural` | SICAR bruto nacional (maio e junho/2026) | `_SICAR_bruto` (ver limitações) |
+| `Cadastro_Ambiental_Rural` | SICAR bruto nacional em GeoPackage (maio e junho/2026; referência) | `_SICAR_bruto` |
+| `Cadastro_Ambiental_Rural\BASE_CAR_ESTADOS_05_2026` | SICAR bruto de maio/2026 por estado: `<ESTADO>.zip` com os 9 zips por plano | `Analise_Conformidade_CAR-INCRA\SICAR_BASE_CAR_ESTADOS_05_2026\<ESTADO>` |
+| `Cadastro_INCRA` | SIGEF e SNCI nacionais de 10/06/2026 (Brasil, Privado, Público) e o INCRA privado por UF | `Analise_Conformidade_CAR-INCRA\INCRA` (`\SIGEF`, `\SNCI`) |
+| `Analise_Conformidade_CAR-INCRA` | Pasta de trabalho da conformidade: `dados_saida_<UF>.zip` (sem `<UF>_shapefile`), relatório de áreas, registros e projetos QGIS | `Analise_Conformidade_CAR-INCRA\Resultados_Analise_Conformidade` |
 | `Cadastro_Ambiental_Rural_UF` | Imóveis selecionados por UF e categoria, com APP/RL/AUR | `CAR_Maio2026_Imoveis_Selecionados` |
 | `Analise_Territorial_CAR-INCRA_dissolvido` | CAR e INCRA dissolvidos por UF | `Analise_Territorial_CAR-INCRA_dissolvido` |
 | `Cruzamento_Espacial` | Cruzamentos VS x CAR, TI, UC, manguezal, projetos e embargos; projetos com atributos de VS; VS recortada por UF | `Cruzamento_Espacial_Vegetacao_Secundaria`, `Projetos_com_VegSec`, `CAR_Maio2026_Imoveis_Selecionados\_veg_*` |
@@ -84,13 +88,15 @@ Opções:
 | `--escopo completo` | Tudo, inclusive produtos finais, referências, relatórios e registros |
 | `--repo computo visualizacao ...` | Só o que esses repositórios produzem ou leem (`conformidade`, `cruzamento`, `computo`, `visualizacao`) |
 | `--sobrescrever` | Substitui arquivos existentes (por padrão, pula os que já têm o mesmo tamanho) |
-| `--manter-aninhados` | Não expande zips que estão dentro de outros zips (VS recortada por UF) |
+| `--manter-aninhados` | Não expande zips que estão dentro de outros zips (VS recortada por UF, downloads do INCRA) |
 
 Exemplos:
 
 ```powershell
 # só o necessário para refazer a visualização
 python restaurar_backup.py --destino D:\PLANAVEG_DADOS --repo visualizacao --executar
+# insumos e pasta de trabalho da conformidade SICAR x INCRA
+python restaurar_backup.py --destino D:\PLANAVEG_DADOS --repo conformidade --executar
 # tudo
 python restaurar_backup.py --destino D:\PLANAVEG_DADOS --escopo completo --executar
 ```
@@ -145,28 +151,54 @@ qualificação, substituído pelas versões qualificadas; não precisam ser roda
 
 **analise_conformidade_sicar-incra**
 
-| Script | Constante | Conteúdo esperado |
+| Script | Constante | Usar |
 |---|---|---|
-| `1_processar_dados_incra.py` | `PASTA_SAIDA` | INCRA (SIGEF e SNCI) separado por UF |
-| `2_processar_dados_sicar.py`, `5_extracao_APP_RL_AUR.py` | `PASTA_SICAR` | SICAR bruto: uma pasta por estado, um `.zip` por plano |
-| `2_` a `6_` | `PASTA_ANALISE` / `BASE_ROOT` | Pasta de trabalho da conformidade (`dados_saída_<UF>`) |
-| `4_analise_conformidade.py` | `PASTA_INCRA` | INCRA por UF (saída do script 1) |
+| `1_processar_dados_incra.py` | `SIGEF_ARQ` | `<dados>\Analise_Conformidade_CAR-INCRA\INCRA\SIGEF\Sigef Privado.shp` |
+| idem | `SNCI_ARQ` | `<dados>\Analise_Conformidade_CAR-INCRA\INCRA\SNCI\Imóvel certificado SNCI Privado.shp` |
+| idem | `PASTA_SAIDA` | `<dados>\Analise_Conformidade_CAR-INCRA\INCRA` |
+| `4_analise_conformidade.py` | `PASTA_INCRA` | `<dados>\Analise_Conformidade_CAR-INCRA\INCRA` |
+| `2_processar_dados_sicar.py`, `5_extracao_APP_RL_AUR.py` | `PASTA_SICAR` | `<dados>\Analise_Conformidade_CAR-INCRA\SICAR_BASE_CAR_ESTADOS_05_2026` |
+| `2_` a `5_` | `PASTA_ANALISE` | `<dados>\Analise_Conformidade_CAR-INCRA\Resultados_Analise_Conformidade` |
+| `6_validacao_resultados.py` | `BASE_ROOT` | idem |
+| `dissolver_car_total.py` | `PASTA_BASE`, `PASTA_UF`, `ARQ_*` | ver o CONFIG do script (estrutura atual ainda não validada) |
+
+Na máquina original, `PASTA_ANALISE` / `BASE_ROOT` ainda apontam para
+`GEODATABASE\INCRA-CAR\Analise_Conformidade`, pasta que foi renomeada para
+`GEODATABASE\Analise_Conformidade_CAR-INCRA\Resultados_Analise_Conformidade`.
+
+Os scripts 4 a 6 retomam do ponto em que pararam usando os `_progresso_*.json`. Esses
+arquivos ficam em `Registros_Resultados_Conformidade.zip` e **não** são restaurados, para
+que uma nova rodada não pule etapas.
 
 ## Limitações
 
-- **Conformidade SICAR x INCRA.** O backup guarda o resultado (imóveis selecionados por UF),
-  não as bases que o geram: o INCRA por UF e a pasta de trabalho `dados_saída_<UF>` não estão
-  no backup. O SICAR bruto está como GeoPackage nacional, e o script 2 lê pastas por estado.
-  Para refazer a conformidade do zero, baixe de novo SICAR e INCRA (ou adapte o script 2 para
-  ler o GeoPackage nacional).
-- **`dissolver_car_total.py`**, que gerou os CARs dissolvidos por UF, não está em nenhum dos
-  quatro repositórios.
+- **`dissolver_car_total.py`** (agora no `analise_conformidade_sicar-incra`) é a última versão
+  versionada (ago/2026) e lê a estrutura de pastas daquela época. Os CARs dissolvidos de maio/2026
+  do backup saíram de uma adaptação que não foi versionada; o CONFIG traz a estrutura atual
+  comentada, a validar com um estado antes do lote.
+- **GeoPackages nacionais `CAR_Nao_Analisado_*_Maio2026`** (cerca de 39 GB, não lidos pelos scripts)
+  só entram no backup com `complementar_backup.py --incluir-nacionais`.
 - **Arquivos acima de 2 GB.** Vários GeoPackages restaurados passam de 2 GB; o ArcGIS pode não
   abri-los (o QGIS abre).
 - **Zips aninhados.** A VS recortada por UF está em zips dentro de outro zip; a restauração os
   expande (a não ser com `--manter-aninhados`) e os extrai de novo a cada rodada.
 
 ## Manutenção do backup
+
+### Complementar com a conformidade SICAR x INCRA
+
+`complementar_backup.py` copia para o backup o SICAR por estado, o INCRA e a pasta de trabalho da
+conformidade, um zip por estado ou UF, conferindo cada um. Parte desses arquivos está no Dropbox
+como "somente online": ao lê-los, o Dropbox os baixa para o disco C:. A simulação mostra quanto
+será baixado e o espaço livre; o script para antes de um item que não caiba no C:.
+
+```powershell
+python complementar_backup.py                  # simulação
+python complementar_backup.py --executar       # grava (rodar de novo só grava o que falta)
+python organizar_backup.py --so-manifesto      # depois, regere o manifesto
+```
+
+### Manifesto
 
 Depois de acrescentar ou trocar arquivos no backup, regere o manifesto e copie-o para
 `manifesto/`:

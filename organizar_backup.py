@@ -41,6 +41,17 @@ BACKUP = Path(os.environ.get("PLANAVEG_BACKUP", r"F:\BKP_PLANAVEG"))
 DROPBOX = Path(r"C:\Users\User\Dropbox\#CONSULTANCY\PLANAVEG\GEODATABASE\GEOPACKAGE")
 G = r"C:\Users\User\Dropbox\#CONSULTANCY\PLANAVEG\GEODATABASE\GEOPACKAGE"   # raiz usada no código hoje
 SICAR_BRUTO = r"C:\Users\User\Dropbox\Geoinformation\GEOINFO BRASIL\SICAR\BASE_CAR_ESTADOS_05_2026"
+INCRA_DIR = r"C:\Users\User\Dropbox\Geoinformation\GEOINFO BRASIL\INCRA"
+CONF_DIR = r"C:\Users\User\Dropbox\#CONSULTANCY\PLANAVEG\GEODATABASE\Analise_Conformidade_CAR-INCRA"
+# pasta de trabalho (relativa ao destino da restauração) dos itens da conformidade SICAR x INCRA
+W_CONF = "Analise_Conformidade_CAR-INCRA"
+W_DESTINO = {   # pasta do backup -> pasta restaurada; o caminho interno do zip é preservado
+    "cadastro_ambiental_rural/base_car_estados_05_2026": f"{W_CONF}\\SICAR_BASE_CAR_ESTADOS_05_2026",
+    "cadastro_incra": f"{W_CONF}\\INCRA",
+    "analise_conformidade_car-incra/resultados_analise_conformidade": f"{W_CONF}\\Resultados_Analise_Conformidade",
+    "analise_conformidade_car-incra": W_CONF,
+}
+NAO_RESTAURAR = {"registros_resultados_conformidade.zip"}   # progressos antigos fariam os scripts pularem etapas
 
 MANIFESTO = "_manifesto_backup.csv"
 REGISTROS = "_Registros_Processamento.zip"
@@ -60,7 +71,8 @@ PASTA_TRABALHO = {
     "Cadastro_Ambiental_Rural": "_SICAR_bruto",
     "Cadastro_Ambiental_Rural_UF": "CAR_Maio2026_Imoveis_Selecionados",
 }
-IGNORAR = {"desktop.ini", "thumbs.db", MANIFESTO.lower(), "organizar_backup.py"}
+IGNORAR = {"desktop.ini", "thumbs.db", MANIFESTO.lower(), "organizar_backup.py",
+           "complementar_backup.py", "restaurar_backup.py"}
 
 R_CONF = "analise_conformidade_sicar-incra"
 R_VS = "cruzamento_vegetacao-secundaria"
@@ -158,15 +170,55 @@ def classificar(rel):
                     rf"{G}\Analise_Territorial_CAR-INCRA_dissolvido\{stem}.gpkg",
                     "sim" if cons else "não - referência",
                     "" if cons else "Não é lido pelos scripts (comparação/versão alternativa)")
+    if p.startswith("cadastro_ambiental_rural/base_car_estados_05_2026/"):
+        if p.endswith(".pdf"):
+            return info("Dado original", "SICAR bruto maio/2026", R_CONF, "download SICAR", "", "",
+                        "não - referência", "Dicionário de dados do SICAR")
+        return info("Dado original", "SICAR bruto maio/2026 (por estado)", R_CONF, "download SICAR (por estado)",
+                    f"{R_CONF}: 2_processar_dados_sicar.py, 5_extracao_APP_RL_AUR.py (PASTA_SICAR)",
+                    rf"{SICAR_BRUTO}\{stem}\ ", "sim",
+                    "Um zip por estado com os 9 zips por plano, que ficam compactados (o passo 2 os abre)")
     if p.startswith("cadastro_ambiental_rural/"):
         if "20260501" in p:
-            return info("Dado original", "SICAR bruto maio/2026", R_CONF, "download SICAR",
-                        f"{R_CONF}: 2_processar_dados_sicar.py, 5_extracao_APP_RL_AUR.py",
-                        rf"{SICAR_BRUTO}\<ESTADO>\ (um .zip por plano)", "sim",
-                        "O código lê a pasta por estado; o backup guarda o GeoPackage nacional")
+            return info("Dado original", "SICAR bruto maio/2026 (nacional)", R_CONF, "download SICAR",
+                        "", "", "não - referência",
+                        r"Mesmo download em GeoPackage nacional; o código lê a cópia por estado "
+                        r"(Cadastro_Ambiental_Rural\BASE_CAR_ESTADOS_05_2026)")
         return info("Dado original", "SICAR bruto junho/2026", "", "download SICAR",
                     "origem do CAR_Junho26_Regularizacao_Ambiental e do CAR Habilitado Junho26",
                     "", "não - referência")
+    if p.startswith("cadastro_incra/"):
+        if "brasil_20260610" in p:
+            return info("Dado original", "INCRA SIGEF/SNCI nacional 10/06/2026", R_CONF, "download INCRA (acervo fundiário)",
+                        f"{R_CONF}: 1_processar_dados_incra.py (SIGEF_ARQ, SNCI_ARQ = camadas Privado)",
+                        rf"{INCRA_DIR}\ ", "sim",
+                        "Zip aninhado: cada download (Brasil, Privado, Público) é expandido na restauração")
+        return info("Produto intermediário", "Conformidade - passo 1 (INCRA privado por UF)", R_CONF,
+                    "1_processar_dados_incra.py", f"{R_CONF}: 4_analise_conformidade.py (PASTA_INCRA)",
+                    rf"{INCRA_DIR}\ ", "sim")
+    if p.startswith("analise_conformidade_car-incra/"):
+        res = rf"{CONF_DIR}\Resultados_Analise_Conformidade"
+        if nome.lower() in NAO_RESTAURAR:
+            return info("Registro", "Conformidade SICAR x INCRA", R_CONF, codigo=rf"{res}\ ",
+                        obs="Progressos, heartbeats, scripts temporários e logs; não são restaurados "
+                            "(os _progresso_*.json fariam os scripts pularem etapas)")
+        if p.endswith(".xlsx"):
+            return info("Relatório", "Conformidade SICAR x INCRA - áreas por UF", R_CONF,
+                        "6_validacao_resultados.py", codigo=rf"{res}\ ")
+        if stem.lower().startswith("projetos_qgis"):
+            return info("Relatório", "Conformidade SICAR x INCRA", R_CONF, codigo=rf"{CONF_DIR}\ ",
+                        obs="Projetos QGIS de conferência")
+        if stem.lower().startswith("car_nao_analisado"):
+            return info("Produto intermediário", "Conformidade - APP/RL/AUR dos imóveis não analisados (Brasil)",
+                        R_CONF, "consolidação nacional fora dos repositórios", "", rf"{CONF_DIR}\ ",
+                        "não - referência", "GeoPackages nacionais; não são lidos pelos scripts")
+        return info("Produto intermediário", "Conformidade SICAR x INCRA - pasta de trabalho por UF", R_CONF,
+                    "2_processar_dados_sicar.py a 6_validacao_resultados.py",
+                    f"{R_CONF}: 3 a 6 e dissolver_car_total.py; {R_VS}: 0_incorporar_app_rl_aur_analisados.py, "
+                    "1_processar_dados_VS.py, 2_cruzamento_espacial_VS.py",
+                    rf"{res}\ ", "sim",
+                    r"No código: PASTA_ANALISE / BASE_ROOT (ainda apontam para INCRA-CAR\Analise_Conformidade, "
+                    r"pasta renomeada). Sem a subpasta <UF>_shapefile (temporária, refeita pelo passo 2)")
     if p.startswith("cadastro_ambiental_rural_uf/imoveis_selecionados"):
         return info("Produto intermediário", "Conformidade SICAR x INCRA (imóveis selecionados por UF)", R_CONF,
                     f"{R_CONF}: 3_categorizar_dados_sicar.py, 4_analise_conformidade.py, 5_extracao_APP_RL_AUR.py; "
@@ -193,6 +245,9 @@ def classificar(rel):
                         "ESSENCIAL: o reporte final de APP/AUR/RL é montado a partir destes arquivos por UF")
         return info("Produto intermediário", f"Cômputo 2026 - classe {n}", R_COMP, TIER_PRODUTOR.get(n, ""), cons,
                     rf"{G}\Computo_Planaveg_2026\{pasta}\ ", "sim")
+    if re.fullmatch(r"computo_planaveg_2026/[^/]+\.xlsx", p):
+        return info("Relatório", "Cômputo 2026 - análises e comparativos 2025 x 2026", R_COMP,
+                    obs="Planilha de análise; não é lida pelos scripts")
     if p.startswith("computo_planaveg_2026/hierarquia/") and p.endswith(".xlsx"):
         return info("Relatório", "Cômputo 2026 - validação", R_COMP, obs="Resumo da validação feita em nuvem")
     if p.startswith("computo_planaveg_2026/reporte_final/"):
@@ -277,6 +332,12 @@ def destino_rel(rel, codigo, grupo, membro=None):
         return "" if membro else REGISTROS            # o zip de registros é copiado inteiro, sem extrair
     if not membro and rel.lower().endswith(".zip"):
         return ""                                    # restaura-se o conteúdo do zip
+    pasta = PurePosixPath(rel.lower()).parent.as_posix()
+    if pasta in W_DESTINO:                           # conformidade SICAR x INCRA: estrutura do zip preservada
+        if PurePosixPath(rel).name.lower() in NAO_RESTAURAR:
+            return ""
+        interno = membro if membro else PurePosixPath(rel).name
+        return str(PureWindowsPath(W_DESTINO[pasta], *PurePosixPath(interno).parts))
     codigo = codigo.strip()
     if codigo.startswith(G):
         r = codigo[len(G):].strip("\\ ")

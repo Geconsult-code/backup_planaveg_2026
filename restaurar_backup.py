@@ -137,8 +137,8 @@ def main():
         print(f"  {topo:45s} {n:5d} arquivos  {b / 1024**3:8.2f} GB")
     print(f"\n{len(tarefas)} arquivos a restaurar ({total / 1024**3:.2f} GB); {pulos} já existem no destino.")
     if manuais:
-        print("\nATENÇÃO: o SICAR bruto vai para _SICAR_bruto\\ como GeoPackage nacional. Os scripts do "
-              "analise_conformidade_sicar-incra leem pastas por estado com um .zip por plano; ver README.")
+        print("\nObs.: _SICAR_bruto\\ recebe o SICAR nacional em GeoPackage (só referência). Para a "
+              "conformidade use Analise_Conformidade_CAR-INCRA\\SICAR_BASE_CAR_ESTADOS_05_2026 (por estado).")
     if not a.executar:
         print("\nSIMULAÇÃO: nada foi gravado. Rode com --executar para restaurar.")
         return
