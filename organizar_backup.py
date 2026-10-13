@@ -110,6 +110,10 @@ TIER_VIZ = {1, 3, 4, 5, 9, 10, 11}   # classes cujas saídas P1/P2 são lidas pe
 
 
 def info(grupo, etapa="", repositorio="", produtor="", consumidores="", codigo="", essencial="", obs=""):
+    if not essencial:
+        essencial = {"Relatório": "não - registro", "Registro": "não - registro",
+                     "Produto final (referência)": "não - referência",
+                     "Script (cópia)": "não - cópia"}.get(grupo, "")
     return dict(grupo=grupo, etapa=etapa, repositorio=repositorio, script_produtor=produtor,
                 scripts_consumidores=consumidores, caminho_no_codigo=codigo,
                 necessario_reprocessar=essencial, observacao=obs)
@@ -213,8 +217,8 @@ def classificar(rel):
                         rf"{G}\CAR_Maio2026_Imoveis_Selecionados\_veg_qualificada_uf\ e \_veg_2024_qualificada_uf\ ",
                         "não - pode ser refeito", "Evita recortar a VS de novo ao refazer o cruzamento")
         if stem == "VS-Cadastro_Ambiental_Rural_validacao":
-            return info("Registro", "Validação do cruzamento VS x CAR", R_VS,
-                        "3_analise_consistencia_VS.py, 4_validacao_resultados_VS.py", "", "", "não - registro")
+            return info("Registro", "Validação em nuvem do cruzamento VS x CAR", R_VS, "", "", "", "não - registro",
+                        "Amostra usada para validar o cruzamento VS x APP/AUR/RL; não é lida pelos scripts")
         if stem in ("VS-Pro_Manguezal", "VS-Terras_Indigenas", "VS-Unidades_Conservacao", "VS-Projetos_Restauracao"):
             cons = (f"{R_VS}: incorporar_vegsec_projetos.py; {R_COMP}: 1_preparar_insumos.py (Recooperar)"
                     if stem == "VS-Projetos_Restauracao" else f"{R_COMP}: 1_preparar_insumos.py (classes 6 a 8)")
@@ -345,7 +349,13 @@ def gerar_manifesto(backup, dropbox, verificar_crc):
                     nomes_backup.add(PurePosixPath(i.filename).name.lower())
                     b = dict(a)
                     if a["grupo"] != "Registro":
-                        b["caminho_no_codigo"] = membro_codigo(a["caminho_no_codigo"], i.filename)
+                        base = a["caminho_no_codigo"]
+                        if p.stem == "VS-Cadastro_Ambiental_Rural_UF":   # zips aninhados, um por versão da VS
+                            sub = "_veg_2024_qualificada_uf" if "2024" in i.filename else "_veg_qualificada_uf"
+                            base = rf"{G}\CAR_Maio2026_Imoveis_Selecionados\{sub}\ "
+                            if i.filename.lower().endswith(".zip"):
+                                b["observacao"] = "Zip aninhado: os GeoPackages por UF estão dentro dele"
+                        b["caminho_no_codigo"] = membro_codigo(base, i.filename)
                     linhas.append(dict(caminho_backup=f"{p}::{i.filename}", nivel="conteudo_zip",
                                        arquivo=PurePosixPath(i.filename).name,
                                        tamanho_MB=round(i.file_size / 1024**2, 2),
