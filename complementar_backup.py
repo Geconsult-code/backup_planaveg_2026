@@ -73,6 +73,38 @@ def na_nuvem(p):
         return False
 
 
+def baixar(p, espera=30, max_falhas=40):
+    """Força o Dropbox a baixar um arquivo "somente online" lendo-o do início ao fim.
+    Arquivos grandes estouram o tempo limite de download do Windows (o erro aparece
+    depois de alguns minutos); aqui a leitura é retomada do ponto em que parou, até
+    max_falhas tentativas seguidas sem avanço."""
+    tam, pos, falhas, ultimo_gb = p.stat().st_size, 0, 0, -1
+    while pos < tam:
+        try:
+            with open(p, "rb") as f:
+                f.seek(pos)
+                while True:
+                    bloco = f.read(64 * 1024 * 1024)
+                    if not bloco:
+                        break
+                    pos += len(bloco)
+                    falhas = 0
+                    if pos // 1024**3 != ultimo_gb:
+                        ultimo_gb = pos // 1024**3
+                        print(f"         baixado {pos / 1024**3:5.1f} de {tam / 1024**3:.1f} GB", flush=True)
+        except OSError as e:
+            falhas += 1
+            if falhas > max_falhas:
+                raise IOError(f"o Dropbox não entregou {p.name} ({pos / 1024**3:.1f} de "
+                              f"{tam / 1024**3:.1f} GB): {e}") from e
+            print(f"         Dropbox ainda baixando ({e.__class__.__name__}); nova tentativa em {espera}s "
+                  f"[{falhas}/{max_falhas}]", flush=True)
+            time.sleep(espera)
+        if pos < tam and falhas == 0:   # leitura terminou antes do tamanho esperado
+            falhas += 1
+            time.sleep(espera)
+
+
 def arquivos(pasta, excluir_pastas=()):
     """Todos os arquivos sob `pasta`, com o caminho relativo, pulando as subpastas excluídas."""
     out = []
@@ -176,13 +208,18 @@ def gravar(tarefa, destino, crc):
     if temp.exists():
         temp.unlink()
     if tarefa.copia_simples:
+        if na_nuvem(tarefa.itens[0][0]):
+            baixar(tarefa.itens[0][0])
         shutil.copy2(tarefa.itens[0][0], temp)
     else:
         modo = zipfile.ZIP_DEFLATED if tarefa.comprimir else zipfile.ZIP_STORED
         with zipfile.ZipFile(temp, "w", compression=modo, allowZip64=True, compresslevel=6 if tarefa.comprimir else None) as z:
             for i, (p, nome) in enumerate(tarefa.itens, 1):
+                nuvem = na_nuvem(p)
                 print(f"      [{i}/{len(tarefa.itens)}] {nome} ({p.stat().st_size / 1024**2:,.1f} MB)"
-                      + (" - baixando do Dropbox" if na_nuvem(p) else ""), flush=True)
+                      + (" - baixando do Dropbox" if nuvem else ""), flush=True)
+                if nuvem:
+                    baixar(p)
                 z.write(p, nome)
     os.replace(temp, destino)
     if not confere(destino, tarefa, crc):
