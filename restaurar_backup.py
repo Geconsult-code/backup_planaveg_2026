@@ -19,10 +19,13 @@ Opções:
   --sobrescrever        substitui arquivos já existentes no destino (padrão: pula se o
                         tamanho for igual)
   --manter-aninhados    não expande os zips que estão dentro de outros zips
+  --filtro PADRAO [..]  só os itens cujo destino casa com algum padrão (curingas * e ?,
+                        sem diferenciar maiúsculas), ex.: "Computo_Planaveg_2026\*" "IBGE_*"
 O destino também pode vir da variável PLANAVEG_RAIZ.
 """
 import argparse
 import csv
+import fnmatch
 import os
 import shutil
 import sys
@@ -52,10 +55,13 @@ def ler_manifesto(backup):
     return linhas
 
 
-def selecionar(linhas, escopo, repos):
+def selecionar(linhas, escopo, repos, filtros=None):
     sel = []
     for l in linhas:
         if l["nivel"] not in ("arquivo", "conteudo_zip") or not l["destino_relativo"]:
+            continue
+        if filtros and not any(fnmatch.fnmatch(l["destino_relativo"].lower(), f.lower().replace("/", "\\"))
+                               for f in filtros):
             continue
         if escopo == "minimo" and l["necessario_reprocessar"] != "sim":
             continue
@@ -106,6 +112,7 @@ def main():
     ap.add_argument("--executar", action="store_true")
     ap.add_argument("--sobrescrever", action="store_true")
     ap.add_argument("--manter-aninhados", action="store_true")
+    ap.add_argument("--filtro", nargs="+")
     a = ap.parse_args()
     if not a.destino:
         sys.exit("Informe --destino (ou defina a variável PLANAVEG_RAIZ).")
@@ -113,7 +120,7 @@ def main():
     if not backup.exists():
         sys.exit(f"Backup não encontrado: {backup}")
 
-    sel = selecionar(ler_manifesto(backup), a.escopo, a.repo)
+    sel = selecionar(ler_manifesto(backup), a.escopo, a.repo, a.filtro)
     tarefas, pulos, manuais = [], 0, []
     for l in sel:
         alvo = destino.joinpath(*PureWindowsPath(l["destino_relativo"]).parts)
@@ -132,7 +139,8 @@ def main():
         por_pasta[topo][1] += tam
     total = sum(t for *_, t in tarefas)
     print(f"Backup:  {backup}\nDestino: {destino}\nEscopo:  {a.escopo}"
-          + (f" | repositórios: {', '.join(a.repo)}" if a.repo else "") + "\n")
+          + (f" | repositórios: {', '.join(a.repo)}" if a.repo else "")
+          + (f" | filtro: {' '.join(a.filtro)}" if a.filtro else "") + "\n")
     for topo, (n, b) in sorted(por_pasta.items()):
         print(f"  {topo:45s} {n:5d} arquivos  {b / 1024**3:8.2f} GB")
     print(f"\n{len(tarefas)} arquivos a restaurar ({total / 1024**3:.2f} GB); {pulos} já existem no destino.")

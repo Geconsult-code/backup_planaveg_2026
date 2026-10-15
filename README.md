@@ -88,6 +88,7 @@ Opções:
 | `--escopo completo` | Tudo, inclusive produtos finais, referências, relatórios e registros |
 | `--repo computo visualizacao ...` | Só o que esses repositórios produzem ou leem (`conformidade`, `cruzamento`, `computo`, `visualizacao`) |
 | `--sobrescrever` | Substitui arquivos existentes (por padrão, pula os que já têm o mesmo tamanho) |
+| `--filtro PADRAO ...` | Só os itens cujo destino casa com algum padrão (curingas `*` e `?`), ex.: `"Computo_Planaveg_2026\*" "IBGE_*"` para restaurar só as saídas do cômputo e os limites do IBGE (~32 GB) |
 | `--manter-aninhados` | Não expande zips que estão dentro de outros zips (VS recortada por UF, downloads do INCRA) |
 
 Exemplos:
