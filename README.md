@@ -20,6 +20,7 @@ repositórios de processamento:
 | `restaurar_backup.py` | Restaura o backup na estrutura de pastas que os scripts esperam, numa pasta à escolha |
 | `organizar_backup.py` | Mantém o backup: consolida registros e gera o `_manifesto_backup.csv` |
 | `complementar_backup.py` | Acrescenta ao backup os insumos e a pasta de trabalho da conformidade SICAR x INCRA |
+| `atualizar_backup.py` | Leva para o backup as mudanças feitas numa cópia restaurada (só regrava os zips que mudaram) |
 | `manifesto/_manifesto_backup.csv` | Cópia do manifesto (o original fica na raiz do backup) |
 
 Os scripts usam só a biblioteca padrão do Python (3.10 ou mais recente); não precisam do
@@ -169,6 +170,24 @@ python complementar_backup.py                  # simulação
 python complementar_backup.py --executar       # grava (rodar de novo só grava o que falta)
 python organizar_backup.py --so-manifesto      # depois, regere o manifesto
 ```
+
+### Atualizar o backup depois de reprocessar numa cópia restaurada
+
+Quando uma etapa é refeita numa cópia restaurada (`restaurar_backup.py`), `atualizar_backup.py`
+compara cada arquivo dos zips do backup com o da cópia (tamanho e CRC32) e regrava só os zips que
+mudaram: arquivos diferentes são substituídos e arquivos novos entram no zip da mesma pasta. Cada
+zip novo é conferido antes de trocar de lugar com o antigo, que vai para
+`F:\BKP_PLANAVEG_substituidos_<data>` (fora do backup; apague depois de conferir). Arquivos novos
+sem zip correspondente são só listados.
+
+```powershell
+python atualizar_backup.py --origem D:\PLANAVEG_TEMP              # simulação
+python atualizar_backup.py --origem D:\PLANAVEG_TEMP --executar   # grava (rodar de novo é seguro)
+python organizar_backup.py --so-manifesto                          # depois, regere o manifesto
+```
+
+Usado em 16/10/2026 para levar ao backup a inclusão do ICMBio na classe 4 (cômputo v0.9.0) e a
+visualização regerada (v1.1.0).
 
 ### Manifesto
 

@@ -249,6 +249,10 @@ def classificar(rel):
                     obs="Planilha de análise; não é lida pelos scripts")
     if p.startswith("computo_planaveg_2026/hierarquia/") and p.endswith(".xlsx"):
         return info("Relatório", "Cômputo 2026 - validação", R_COMP, obs="Resumo da validação feita em nuvem")
+    if p.startswith("computo_planaveg_2026/validacao_icmbio/"):
+        return info("Relatório", "Cômputo 2026 - seleção dos polígonos do ICMBio (classe 4)", R_COMP,
+                    obs="Sobreposições do GEF Terrestre e da Restauração Ecológica e polígonos escolhidos "
+                        "(decisões de 14/10/2026); o insumo consolidado IN_ICMBio_2026 está no zip de Insumos")
     if p.startswith("computo_planaveg_2026/reporte_final/"):
         total = stem == "Planaveg_2026_Total"
         return info("Produto final", "Cômputo 2026 - reporte", R_COMP, "gerar_geopackages_finais.py",
