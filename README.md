@@ -33,7 +33,7 @@ Quase tudo está em `.zip`; cada zip guarda os arquivos de uma pasta de trabalho
 
 | Pasta do backup | Conteúdo | Pasta de trabalho (após restaurar) |
 |---|---|---|
-| `Dados_originais_Planaveg_2026` | Insumos: IBGE, CNUC, FUNAI, INCRA, Recooperar, ICMBio, ORR, Pró-Manguezal, PANGIA, CAR regularização, SIGEF público em APA | raiz |
+| `Dados_originais_Planaveg_2026` | Insumos: IBGE, CNUC, FUNAI, INCRA, Recooperar, ICMBio, ORR, Pró-Manguezal, PANGIA, MonitoRAD, CAR regularização, SIGEF público em APA | raiz |
 | `Vegetacao_Secundaria` | VS 2022 (Brasil) e VS 2024 (Amazônia, Cerrado), bruta e qualificada | `Vegetacao_Secundaria_INPE` |
 | `Cadastro_Ambiental_Rural` | SICAR bruto nacional em GeoPackage (maio e junho/2026; referência) | `_SICAR_bruto` |
 | `Cadastro_Ambiental_Rural\BASE_CAR_ESTADOS_05_2026` | SICAR bruto de maio/2026 por estado: `<ESTADO>.zip` com os 9 zips por plano | `Analise_Conformidade_CAR-INCRA\SICAR_BASE_CAR_ESTADOS_05_2026\<ESTADO>` |
@@ -187,7 +187,10 @@ python organizar_backup.py --so-manifesto                          # depois, reg
 ```
 
 Usado em 16/10/2026 para levar ao backup a inclusão do ICMBio na classe 4 (cômputo v0.9.0) e a
-visualização regerada (v1.1.0).
+visualização regerada (v1.1.0), e em 21/10/2026 para o MonitoRAD na classe 2 (cômputo v1.0.0, visualização
+v1.2.0). Os itens sem zip anterior (`Hierarquia\Tier2_MonitoRAD\Tier2_MonitoRAD.zip`,
+`Reporte_Final\Planaveg_2026_Projetos_MonitoRAD.zip`, o original do MonitoRAD e `Validacao_MonitoRAD\`) foram
+criados à parte, no mesmo padrão dos existentes.
 
 ### Manifesto
 

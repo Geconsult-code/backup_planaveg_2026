@@ -94,6 +94,8 @@ ORIGINAIS = {
     "IBAMA_Areas_Embargadas_PANGIA20260920.gpkg": ("Embargos PANGIA 2026 bruto (com pontos e registros sem geometria)",
                                                    "origem do arquivo _Poligonos"),
     "IBAMA_Areas_Embargadas_PANGIA20251023.gpkg": ("Embargos PANGIA 2025 bruto", "origem do arquivo _Poligonos"),
+    "IBAMA_Areas_Embargadas_MonitoRAD2026.gpkg": ("MonitoRAD 2026 (IBAMA): análise de NDVI e polígonos dos embargos",
+        f"{R_COMP}: consolidar_monitorad.py -> Insumos/IN_MonitoRAD_2026 (classe 2)"),
     "IBAMA_Projetos_Recooperar_2025_com_area.gpkg": ("Recooperar 2025 com área",
         f"{R_VS}: cruzar_projetos_vegsec*.py, incorporar_vegsec_projetos.py"),
     "IBAMA_Projetos_Recooperar_2026_com_area.gpkg": ("Recooperar 2026 com área",
@@ -126,11 +128,11 @@ ORIGINAIS = {
         f"{R_COMP} (classe 7); {R_VS}: cruzar_projetos_vegsec*.py; {R_VIZ} (UC/APA/RPPN)"),
 }
 
-TIER_PRODUTOR = {1: "2_camada2_projetos.py", 3: "2_camada2_projetos.py", 4: "2_camada2_projetos.py",
+TIER_PRODUTOR = {1: "2_camada2_projetos.py", 2: "incluir_monitorad_classe2.py", 3: "2_camada2_projetos.py", 4: "2_camada2_projetos.py",
                  5: "2_camada2_projetos.py", 6: "3_camada1_vs_governanca.py", 7: "3_camada1_vs_governanca.py",
                  8: "3_camada1_vs_governanca.py", 9: "3b_camada1_car.py", 10: "3b_camada1_car.py",
                  11: "3b_camada1_car.py"}
-TIER_VIZ = {1, 3, 4, 5, 9, 10, 11}   # classes cujas saídas P1/P2 são lidas pela visualização
+TIER_VIZ = {1, 2, 3, 4, 5, 9, 10, 11}   # classes cujas saídas P1/P2 são lidas pela visualização
 
 
 def info(grupo, etapa="", repositorio="", produtor="", consumidores="", codigo="", essencial="", obs=""):
@@ -253,6 +255,10 @@ def classificar(rel):
         return info("Relatório", "Cômputo 2026 - seleção dos polígonos do ICMBio (classe 4)", R_COMP,
                     obs="Sobreposições do GEF Terrestre e da Restauração Ecológica e polígonos escolhidos "
                         "(decisões de 14/10/2026); o insumo consolidado IN_ICMBio_2026 está no zip de Insumos")
+    if p.startswith("computo_planaveg_2026/validacao_monitorad/"):
+        return info("Relatório", "Cômputo 2026 - consolidação do MonitoRAD e sobreposição entre projetos (classe 2)", R_COMP,
+                    obs="Polígonos 'Com indício de recuperação' consolidados e sobreposições entre as classes 1 a 5 "
+                        "(decisões de 20/10/2026); o insumo IN_MonitoRAD_2026 também está no zip de Insumos")
     if p.startswith("computo_planaveg_2026/reporte_final/"):
         total = stem == "Planaveg_2026_Total"
         return info("Produto final", "Cômputo 2026 - reporte", R_COMP, "gerar_geopackages_finais.py",
