@@ -87,13 +87,15 @@ ORIGINAIS = {
     "Territorios_Quilombolas_INCRA20260610.gpkg": ("Territórios quilombolas INCRA", f"{R_VIZ} (flag QL)"),
     "CAR_Junho26_Regularizacao_Ambiental.gpkg": ("SICAR em regularização ambiental (AC, MT, PB, RJ, SP)",
                                                  f"{R_COMP}: 1_preparar_insumos.py (classe 3)"),
-    "IBAMA_Areas_Embargadas_PANGIA20260920_Poligonos.gpkg": ("Embargos PANGIA 2026 só polígonos",
-        f"{R_COMP}: 1_preparar_insumos.py (classe 4); {R_VS}: cruzar_embargos_vegsec.py"),
+    "IBAMA_Areas_Embargadas_PANGIA20260920_Poligonos.gpkg": ("Embargos PANGIA 2026 só polígonos (fora da hierarquia desde 21/10/2026)",
+        f"{R_COMP}: 1_preparar_insumos.py (insumo gerado, não usado na hierarquia desde a v1.1.0); {R_VS}: cruzar_embargos_vegsec.py"),
     "IBAMA_Areas_Embargadas_PANGIA20251023_Poligonos.gpkg": ("Embargos PANGIA 2025 só polígonos",
         f"{R_VS}: cruzar_embargos_vegsec.py"),
     "IBAMA_Areas_Embargadas_PANGIA20260920.gpkg": ("Embargos PANGIA 2026 bruto (com pontos e registros sem geometria)",
                                                    "origem do arquivo _Poligonos"),
     "IBAMA_Areas_Embargadas_PANGIA20251023.gpkg": ("Embargos PANGIA 2025 bruto", "origem do arquivo _Poligonos"),
+    "FUNBIO_Areas_Restauracao_20261023.gpkg": ("FUNBIO: áreas de restauração (5 camadas)",
+        f"{R_COMP}: consolidar_funbio.py -> Insumos/IN_FUNBIO_2026 (classe 4)"),
     "IBAMA_Areas_Embargadas_MonitoRAD2026.gpkg": ("MonitoRAD 2026 (IBAMA): análise de NDVI e polígonos dos embargos",
         f"{R_COMP}: consolidar_monitorad.py -> Insumos/IN_MonitoRAD_2026 (classe 2)"),
     "IBAMA_Projetos_Recooperar_2025_com_area.gpkg": ("Recooperar 2025 com área",
@@ -128,7 +130,7 @@ ORIGINAIS = {
         f"{R_COMP} (classe 7); {R_VS}: cruzar_projetos_vegsec*.py; {R_VIZ} (UC/APA/RPPN)"),
 }
 
-TIER_PRODUTOR = {1: "2_camada2_projetos.py", 2: "incluir_monitorad_classe2.py", 3: "2_camada2_projetos.py", 4: "2_camada2_projetos.py",
+TIER_PRODUTOR = {1: "2_camada2_projetos.py", 2: "incluir_monitorad_classe2.py", 3: "2_camada2_projetos.py", 4: "2_camada2_projetos.py; incluir_funbio_classe4.py",
                  5: "2_camada2_projetos.py", 6: "3_camada1_vs_governanca.py", 7: "3_camada1_vs_governanca.py",
                  8: "3_camada1_vs_governanca.py", 9: "3b_camada1_car.py", 10: "3b_camada1_car.py",
                  11: "3b_camada1_car.py"}
@@ -255,6 +257,10 @@ def classificar(rel):
         return info("Relatório", "Cômputo 2026 - seleção dos polígonos do ICMBio (classe 4)", R_COMP,
                     obs="Sobreposições do GEF Terrestre e da Restauração Ecológica e polígonos escolhidos "
                         "(decisões de 14/10/2026); o insumo consolidado IN_ICMBio_2026 está no zip de Insumos")
+    if p.startswith("computo_planaveg_2026/validacao_funbio/"):
+        return info("Relatório", "Cômputo 2026 - validação da FUNBIO e sobreposição entre projetos (classe 4)", R_COMP,
+                    obs="Validação das 5 camadas da FUNBIO e sobreposições com as classes 1 a 5 (decisões de 23/10/2026); "
+                        "o insumo IN_FUNBIO_2026 está no zip de Insumos")
     if p.startswith("computo_planaveg_2026/validacao_monitorad/"):
         return info("Relatório", "Cômputo 2026 - consolidação do MonitoRAD e sobreposição entre projetos (classe 2)", R_COMP,
                     obs="Polígonos 'Com indício de recuperação' consolidados e sobreposições entre as classes 1 a 5 "
